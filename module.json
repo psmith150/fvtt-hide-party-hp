@@ -1,0 +1,35 @@
+{
+  "id": "hide-party-hp",
+  "title": "Hide Party HP",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "psmith150",
+      "discord": "@psmith150",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/hide_party_hp.js"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ]
+}
