@@ -1,5 +1,7 @@
 {
 	"hide-party-hp.settings.hide-pcs.name": "Hide PC HP",
 	"hide-party-hp.settings.hide-pcs.hint": "Hide the HP of PCs unless user has Observer or higher permission.",
-	"hide-party-hp.settings.configure-hp.name": "HP"
+	"hide-party-hp.configure-hp.name": "HP",
+	"hide-party-hp.configure-hp-dialog.title": "Show/Hide HP Bars",
+	"hide-party-hp.configure-hp-dialog.showhide.label": "Show HP Bars?"
 }

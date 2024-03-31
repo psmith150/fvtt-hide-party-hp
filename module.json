@@ -25,6 +25,9 @@
   "esmodules": [
     "scripts/hide_party_hp.js"
   ],
+  "styles": [
+    "styles/hp-config.css"
+  ],
   "languages": [
     {
       "lang": "en",
