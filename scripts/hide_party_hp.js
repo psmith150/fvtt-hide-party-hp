@@ -9,10 +9,14 @@ class HidePartyHp {
         HPCONFIG: `modules/${this.ID}/templates/hp-config.hbs`
     }
 
+    static SETTINGS = {
+        HIDEPCS: 'hide-pcs'
+    }
+
     static init() {
         game.settings.register(this.ID, 'hide-pcs', {
-			name: game.i18n.localize(`${this.ID}.settings.hide-pcs.name`),
-			hint: game.i18n.localize(`${this.ID}.settings.hide-pcs.hint`),
+			name: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCS}.name`),
+			hint: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCS}.hint`),
 			scope: 'world',
 			config: true,
 			restricted: true,
@@ -32,17 +36,19 @@ class HidePartyHp {
         const members = groupData.actor.system.members;
         for (let member of members) {
             let actor = member.actor;
-            if (this._shouldHideActor(actor)) {
+            if (this._shouldHideActor(group.actor, actor)) {
                 const hpDisplay = html.find(`.group-member[data-actor-id="${actor.id}"] .hp`)
                 if (hpDisplay) {
-                    hpDisplay.removeClass('flexrow').addClass('hidden');
+                    hpDisplay.empty();
                 }
             }
         }
     }
 
-    static _shouldHideActor(actor) {
-        return game.settings.get(this.ID, 'hide-pcs') && !actor.testUserPermission(game.user, "OBSERVER");
+    static _shouldHideActor(groupActor, actor) {
+        return game.settings.get(this.ID, this.SETTINGS.HIDEPCS)
+            && !actor.testUserPermission(game.user, "OBSERVER")
+            && !this._memberIsChecked(groupActor, actor.id);
     }
 
     static _userIsGm() {
@@ -62,7 +68,16 @@ class HidePartyHp {
     }
 
     static updateHpFlags(group, data) {
-        group.actor.setFlag(this.ID, this.FLAGS.HPCONFIG, data)
+        group.actor.setFlag(this.ID, this.FLAGS.HPCONFIG, data);
+    }
+
+    static _memberIsChecked(groupActor, actorId) {
+        const flagVal = groupActor.getFlag(this.ID, this.FLAGS.HPCONFIG);
+        let checked = true;
+        if (flagVal !== undefined) {
+            checked = flagVal[actorId]?.showHp ?? true;
+        }
+        return checked;
     }
 
     static _onConfigureHp(event, group) {
@@ -70,14 +85,22 @@ class HidePartyHp {
         //     left: Math.max(this.position.left, 10),
         //     top: Math.max(this.position.top + 20, 10)
         // };
-        new HpConfig(group).render(true);
+        const members = {};
+        for (let member of group.actor.system.members) {
+            let m = {
+                actor: member.actor,
+                showHp: this._memberIsChecked(group.actor, member.actor.id),
+            }
+            members[member.actor.id] = m;
+        }
+        new HpConfig(group, members).render(true);
     }
 }
 
 class HpConfig extends FormApplication {
-    constructor(group) {
-        super();
-        this.group = group;
+    constructor(group, members) {
+        super(group);
+        this.members = members;
     }
 
     static get defaultOptions() {
@@ -98,14 +121,13 @@ class HpConfig extends FormApplication {
 
     getData(options) {
         return {
-            members: this.group.object.system.members
+            members: this.members
         };
     }
 
     async _updateObject(event, formData) {
-        console.log('Data updated');
         const expandedData = foundry.utils.expandObject(formData);
-        await HidePartyHp.updateHpFlags(this.group, expandedData);
+        await HidePartyHp.updateHpFlags(this.object, expandedData);
     }
 }
 
