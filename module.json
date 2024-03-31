@@ -2,7 +2,7 @@
   "id": "hide-party-hp",
   "description": "Allows the GM to hide individual players' HP bar from the party sheet.",
   "title": "Hide Party HP",
-  "version": "1.0.0",
+  "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "11",
     "verified": "11"
@@ -41,7 +41,9 @@
       "path": "lang/en.json"
     }
   ],
-  "url": "https://github.com/psmith150/fvtt-hide-party-hp",
-  "download": "https://github.com/psmith150/fvtt-hide-party-hp/releases/latest/download/module.json",
-  "manifest": "https://github.com/psmith150/fvtt-hide-party-hp/releases/download/1.0.0.zip"
+  "url": "#{URL}#",
+  "download": "#{DOWNLOAD}#",
+  "manifest": "#{MANIFEST}#",
+  "license": "LICENSE",
+  "readme": "README.md"
 }
