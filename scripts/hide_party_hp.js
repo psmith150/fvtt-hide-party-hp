@@ -1,3 +1,5 @@
+const { ApplicationV2, DocumentSheetV2, HandlebarsApplicationMixin } = foundry.applications.api
+
 class HidePartyHp {
     static ID = 'hide-party-hp';
 
@@ -37,7 +39,7 @@ class HidePartyHp {
         for (let member of members) {
             let actor = member.actor;
             if (this._shouldHideActor(group.actor, actor)) {
-                const hpDisplay = html.find(`.group-member[data-actor-id="${actor.id}"] .hp`)
+                const hpDisplay = html.querySelector(`.group-member[data-actor-id="${actor.id}"] .hp`)
                 if (hpDisplay) {
                     hpDisplay.empty();
                 }
@@ -93,41 +95,67 @@ class HidePartyHp {
             }
             members[member.actor.id] = m;
         }
-        new HpConfig(group, members).render(true);
+        new HpConfig({group: group, members: members}).render(true);
     }
 }
 
-class HpConfig extends FormApplication {
-    constructor(group, members) {
-        super(group);
-        this.members = members;
+class HpConfig extends HandlebarsApplicationMixin(ApplicationV2) {
+    constructor(options) {
+        super(options);
     }
 
-    static get defaultOptions() {
-        const defaults = super.defaultOptions;
-
-        const overrides = {
-            height: 'auto',
+    static DEFAULT_OPTIONS = {
+        position: {
+            height: 'auto'
+        },
+        window: {
             resizable: true,
-            id: 'party-hp-config',
-            template: HidePartyHp.TEMPLATES.HPCONFIG,
-            title: game.i18n.localize(`${HidePartyHp.ID}.configure-hp-dialog.title`),
+            contentClasses: ["standard-form"]
+        },
+        tag: 'form',
+        id: 'party-hp-config',
+        template: HidePartyHp.TEMPLATES.HPCONFIG,
+        title: game.i18n.localize(`${HidePartyHp.ID}.configure-hp-dialog.title`),
+        form: {
             closeOnSubmit: true,
-        };
+            handler: HpConfig.#onSubmit
+        }
+    };
 
-        const mergedOptions = foundry.utils.mergeObject(defaults, overrides);
-        return mergedOptions;
+    /** @inheritDoc */
+    static PARTS = {
+        form: {
+            template: `modules/${this.ID}/templates/hp-config.hbs`
+        },
+        footer: {
+            template: "templates/generic/form-footer.hbs",
+        }
     }
 
-    getData(options) {
-        return {
-            members: this.members
-        };
+    get group() {
+        return this.options.group
     }
 
-    async _updateObject(event, formData) {
-        const expandedData = foundry.utils.expandObject(formData);
-        await HidePartyHp.updateHpFlags(this.object, expandedData);
+    get members() {
+        return this.options.members
+    }
+
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options)
+        context.members = this.members
+        context.buttons = [
+            {
+                type: "submit",
+                icon: "fa fa-save",
+                label: "SETTINGS.Save"
+            }
+        ]
+        return context
+    }
+
+    static async #onSubmit (event, form, formData) {
+        const expandedData = foundry.utils.expandObject(formData.object);
+        await HidePartyHp.updateHpFlags(this.group, expandedData);
     }
 }
 
