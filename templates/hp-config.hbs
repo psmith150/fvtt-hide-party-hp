@@ -1,12 +1,12 @@
-<section class="directory hide-party-hp">
-    <header class="directory-header flexrow">
+<section class="hide-party-hp">
+    <header class="table-header flexrow">
         {{!-- <h3 class="name">{{localize "CONFIG.Actor.typeLabels['base']"}}</h3> --}}
         <span class="name">{{localize "DND5E.Group.Member.one"}}</span>
         <span class="controls">{{localize "hide-party-hp.configure-hp-dialog.showhide.label"}}</span>
     </header>
-    <ol class="members-list directory-list flexcol">
+    <ol class="members-list flexcol scrollable">
         {{#each members as |member|}}
-            <li class="group-member directory-item flexrow" data-actor-id="{{member.actor.id}}">
+            <li class="group-member flexrow" data-uuid="{{member.actor.id}}">
                 <div class="name flexrow">
                     <img class="thumbnail" src="{{member.actor.img}}">
                     <h4 class="document-name">{{member.actor.name}}</h4>
@@ -18,8 +18,3 @@
         {{/each}}
     </ol>
 </section>
-<footer>
-    <button type="submit" name="submit">
-        <i class="fa fa-save"></i>Save
-    </button>
-</footer>

@@ -1,16 +1,21 @@
-.hide-party-hp .directory-header span {
-    border-bottom: 1px solid var(--color-underline-header);
-}
-
-.hide-party-hp .directory-header .controls {
+.hide-party-hp .table-header .controls {
     text-align: end;
 }
 
-/* .hide-party-hp .members-list .name {
-    flex-basis: auto;
-} */
+.hide-party-hp .table-header .name {
+    text-align: center
+}
 
 .hide-party-hp .members-list .controls {
-    /* flex-basis: 30px; */
     text-align: end;
+    padding-left: 10px;
+}
+
+.hide-party-hp .group-member .thumbnail {
+    flex-grow: unset;
+    height: 70px;
+}
+
+.hide-party-hp-invisible {
+    visibility: hidden;
 }
