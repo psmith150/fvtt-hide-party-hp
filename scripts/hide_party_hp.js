@@ -127,16 +127,17 @@ class HpConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
     static DEFAULT_OPTIONS = {
         position: {
-            height: 'auto'
+            height: 'auto',
+            width: 'auto'
         },
         window: {
-            resizable: true,
-            contentClasses: ["standard-form"]
+            resizable: false,
+            contentClasses: ["standard-form"],
+            title: `${HidePartyHp.ID}.configure-hp-dialog.title`
         },
         tag: 'form',
         id: 'party-hp-config',
         template: HidePartyHp.TEMPLATES.HPCONFIG,
-        title: `${HidePartyHp.ID}.configure-hp-dialog.title`,
         form: {
             closeOnSubmit: true,
             handler: HpConfig.#onSubmit
