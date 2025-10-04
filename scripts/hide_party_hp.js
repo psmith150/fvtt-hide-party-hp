@@ -1,3 +1,5 @@
+const { ApplicationV2, DocumentSheetV2, HandlebarsApplicationMixin } = foundry.applications.api
+
 class HidePartyHp {
     static ID = 'hide-party-hp';
 
@@ -10,17 +12,27 @@ class HidePartyHp {
     }
 
     static SETTINGS = {
-        HIDEPCS: 'hide-pcs'
+        HIDEPCSHP: 'hide-pcs-hp',
+        HIDEPCSHD: 'hide-pcs-hd',
     }
 
     static init() {
-        game.settings.register(this.ID, 'hide-pcs', {
-			name: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCS}.name`),
-			hint: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCS}.hint`),
+        game.settings.register(this.ID, `${this.SETTINGS.HIDEPCSHP}`, {
+			name: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCSHP}.name`),
+			hint: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCSHP}.hint`),
 			scope: 'world',
 			config: true,
 			restricted: true,
 			default: true,
+			type: Boolean,
+		});
+        game.settings.register(this.ID, `${this.SETTINGS.HIDEPCSHD}`, {
+			name: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCSHD}.name`),
+			hint: game.i18n.localize(`${this.ID}.settings.${this.SETTINGS.HIDEPCSHD}.hint`),
+			scope: 'world',
+			config: true,
+			restricted: true,
+			default: false,
 			type: Boolean,
 		});
     }
@@ -36,17 +48,29 @@ class HidePartyHp {
         const members = groupData.actor.system.members;
         for (let member of members) {
             let actor = member.actor;
-            if (this._shouldHideActor(group.actor, actor)) {
-                const hpDisplay = html.find(`.group-member[data-actor-id="${actor.id}"] .hp`)
+            if (this._shouldHideActorHp(group.actor, actor)) {
+                const hpDisplay = html.querySelector(`.member[data-uuid="Actor.${actor.id}"] .hp-bar`)
                 if (hpDisplay) {
-                    hpDisplay.empty();
+                    hpDisplay.classList.add("hide-party-hp-invisible");
+                }
+            }
+            if (this._shouldHideActorHd(group.actor, actor)) {
+                const hpDisplay = html.querySelector(`.member[data-uuid="Actor.${actor.id}"] .hd-bar`)
+                if (hpDisplay) {
+                    hpDisplay.classList.add("hide-party-hp-invisible");
                 }
             }
         }
     }
 
-    static _shouldHideActor(groupActor, actor) {
-        return game.settings.get(this.ID, this.SETTINGS.HIDEPCS)
+    static _shouldHideActorHp(groupActor, actor) {
+        return game.settings.get(this.ID, this.SETTINGS.HIDEPCSHD)
+            && !actor.testUserPermission(game.user, "OBSERVER")
+            && !this._memberIsChecked(groupActor, actor.id);
+    }
+
+    static _shouldHideActorHd(groupActor, actor) {
+        return game.settings.get(this.ID, this.SETTINGS.HIDEPCSHD)
             && !actor.testUserPermission(game.user, "OBSERVER")
             && !this._memberIsChecked(groupActor, actor.id);
     }
@@ -56,14 +80,13 @@ class HidePartyHp {
     }
 
     static configureHeaderButtons(group, buttons) {
-        if (!this._userIsGm()) {
-            return;
-        }
         buttons.unshift({
-            label: game.i18n.localize(`${this.ID}.configure-hp.name`),
+            label: `${this.ID}.configure-hp.name`,
             class: "hide-party-hp-configure",
             icon: "fas fa-heart",
-            onclick: ev => this._onConfigureHp(ev, group)
+            onClick: ev => this._onConfigureHp(ev, group),
+            //action: "_onConfigureHp",
+            visible: ev => this._userIsGm()
         });
     }
 
@@ -93,41 +116,68 @@ class HidePartyHp {
             }
             members[member.actor.id] = m;
         }
-        new HpConfig(group, members).render(true);
+        new HpConfig({group: group, members: members}).render(true);
     }
 }
 
-class HpConfig extends FormApplication {
-    constructor(group, members) {
-        super(group);
-        this.members = members;
+class HpConfig extends HandlebarsApplicationMixin(ApplicationV2) {
+    constructor(options) {
+        super(options);
     }
 
-    static get defaultOptions() {
-        const defaults = super.defaultOptions;
-
-        const overrides = {
+    static DEFAULT_OPTIONS = {
+        position: {
             height: 'auto',
-            resizable: true,
-            id: 'party-hp-config',
-            template: HidePartyHp.TEMPLATES.HPCONFIG,
-            title: game.i18n.localize(`${HidePartyHp.ID}.configure-hp-dialog.title`),
+            width: 'auto'
+        },
+        window: {
+            resizable: false,
+            contentClasses: ["standard-form"],
+            title: `${HidePartyHp.ID}.configure-hp-dialog.title`
+        },
+        tag: 'form',
+        id: 'party-hp-config',
+        template: HidePartyHp.TEMPLATES.HPCONFIG,
+        form: {
             closeOnSubmit: true,
-        };
+            handler: HpConfig.#onSubmit
+        }
+    };
 
-        const mergedOptions = foundry.utils.mergeObject(defaults, overrides);
-        return mergedOptions;
+    /** @inheritDoc */
+    static PARTS = {
+        form: {
+            template: `modules/${HidePartyHp.ID}/templates/hp-config.hbs`
+        },
+        footer: {
+            template: "templates/generic/form-footer.hbs",
+        }
     }
 
-    getData(options) {
-        return {
-            members: this.members
-        };
+    get group() {
+        return this.options.group
     }
 
-    async _updateObject(event, formData) {
-        const expandedData = foundry.utils.expandObject(formData);
-        await HidePartyHp.updateHpFlags(this.object, expandedData);
+    get members() {
+        return this.options.members
+    }
+
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options)
+        context.members = this.members
+        context.buttons = [
+            {
+                type: "submit",
+                icon: "fa fa-save",
+                label: "SETTINGS.Save"
+            }
+        ]
+        return context
+    }
+
+    static async #onSubmit (event, form, formData) {
+        const expandedData = foundry.utils.expandObject(formData.object);
+        await HidePartyHp.updateHpFlags(this.group, expandedData);
     }
 }
 
@@ -135,10 +185,10 @@ Hooks.on('init', () => {
     HidePartyHp.init();
 });
 
-Hooks.on('renderGroupActorSheet', (group, html, groupData) => {
+Hooks.on('renderGroupActorSheet', (group, html, groupData, options) => {
     HidePartyHp.hidePartyHp(group, html, groupData)
 });
 
-Hooks.on('getGroupActorSheetHeaderButtons', (group, buttons) => {
+Hooks.on('getHeaderControlsMultiActorSheet', (group, buttons) => {
     HidePartyHp.configureHeaderButtons(group, buttons);
 });
