@@ -64,7 +64,7 @@ class HidePartyHp {
     }
 
     static _shouldHideActorHp(groupActor, actor) {
-        return game.settings.get(this.ID, this.SETTINGS.HIDEPCSHD)
+        return game.settings.get(this.ID, this.SETTINGS.HIDEPCSHP)
             && !actor.testUserPermission(game.user, "OBSERVER")
             && !this._memberIsChecked(groupActor, actor.id);
     }
